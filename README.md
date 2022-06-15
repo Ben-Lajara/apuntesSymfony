@@ -185,3 +185,49 @@ El contenido del twig debe ser similar a esto:
 ```
 
 Aunque realmente se puede hacer de muchas maneras (esto es con una navbar de Bootstrap) lo importante aquí es el uso del bucle for para generar los enlaces que están guardados en la base de datos y en el caso de tener que usar inicios y cierres de sesión utilizar el `if is_granted`.
+## Validación
+**1. Crear validador**
+
+Para crear el validador tendremos que ejecutar el comando `php bin/console make:validator`, que generará dos archivos php en la carpeta de validación (si no existía previamente el comando la generará automáticamente) y a partir de ahí modificamos el fichero _Validator_ para que se ajuste a lo que necesitamos.
+
+Un ejemplo sería el de teléfonos móviles de Españita.
+```
+if (!preg_match('((6|7)[0-9]{8})', $value, $matches)) {
+	$this->context->buildViolation($constraint->message)
+		->setParameter('{{ string }}', $value)
+		->addViolation();
+}
+```
+
+O el de DNIs.
+```
+$dni = $value;
+$numero = substr($dni, 0, -1);
+$letra  = strtoupper(substr($dni, -1));
+
+if (!is_string($value)) {
+	throw new UnexpectedValueException($value, 'string');            
+}
+
+if(!preg_match(("/^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i"), $value, $matches )){
+	$this->context->buildViolation($constraint->message)
+		->setParameter('{{ string }}', $value)
+		->addViolation();
+}
+
+if($letra != substr("TRWAGMYFPDXBNJZSQVHLCKE", strtr($numero, "XYZ", "012")%23, 1)){
+	$this->context->buildViolation($constraint->message)
+		->setParameter('{{ string }}', $value)
+		->addViolation();
+}
+    
+```
+
+**2. Poner los constraints en el formulario**
+
+Dentro del array del campo que necesitamos validar en el formulario hay que poner `['constraints' => [new Clase()]]` sustituyendo _Clase_ por el nombre de la clase validadora (sin poner Validator).
+
+**Ejemplo:**
+```
+->add('telefono', TextType::class, ['constraints' => [new TelefonoMovil()]])
+```
