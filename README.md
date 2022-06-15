@@ -139,134 +139,6 @@ Otra manera de privatizar una función es introducir las siguientes líneas al p
 
 **Nota:** no sé si ambos métodos son compatibles, pero como lo más seguro es que no lo sean usad solo uno a la vez (preferentemente el del _security.yaml_).
 
-## Crear menú dinámico
-
-**1. Crear la entidad**
-
-Creamos la entidad _Menu_ con las propiedades _id_ y _titulo_. Tras ello actualizamos la base de datos.
-
-**2. El controlador**
-
-Aquí existen dos posiblidades: usar un controlador ya existente y crear un template nuevo o generar un controlador desde la línea de comandos. De una manera u otra la función deberá ser algo así (obviamente la ruta del twig no tiene que ser la misma):
-```
-    public function menu(ManagerRegistry $doctrine)
-    {
-	    $menus=$doctrine->getRepository(Menu::class)->findAll();
-	    return $this->render('menu/menu.html.twig',array("menus"=>$menus));
-    }
-```
-
-**3. El twig**
-
-El contenido del twig debe ser similar a esto:
-
-```
-{% extends 'base.html.twig' %}
-
-{% block menu %}
-	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-		<div class="container-fluid">
-			<a class="navbar-brand" href="#">Navbar</a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="navbar-nav">
-				{% for item in menus %}
-					<li class="nav-item">
-						<a class="nav-link" href="{{path(item.enlace)}}">{{item.titulo}}</a>
-                        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
-                            <a class="nav-link" href="{{ path('app_logout') }}">
-                                Cerrar sesión
-                            </a>
-                            {% else %}
-                                <a class="nav-link" href="{{ path('login') }}">Iniciar sesión</a>
-                        {% endif %}
-					</li>
-				{% endfor %}
-               
-				</ul>
-			</div>
-		</div>
-	</nav>
-{% endblock %}
-```
-
-Aunque realmente se puede hacer de muchas maneras (esto es con una _navbar_ de Bootstrap) lo importante aquí es el uso del bucle for para generar los enlaces que están guardados en la base de datos y en el caso de tener que usar inicios y cierres de sesión utilizar el `if is_granted`. Si no los hay se quedaría algo así:
-
-```
-{% extends 'base.html.twig' %}
-
-{% block menu %}
-	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-		<div class="container-fluid">
-			<a class="navbar-brand" href="#">Navbar</a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="navbar-nav">
-				{% for item in menus %}
-					<li class="nav-item">
-						<a class="nav-link" href="{{path(item.enlace)}}">{{item.titulo}}</a>
-					</li>
-				{% endfor %}
-               
-				</ul>
-			</div>
-		</div>
-	</nav>
-{% endblock %}
-```
-
-## Validación
-**1. Crear validador**
-
-Para crear el validador tendremos que ejecutar el comando `php bin/console make:validator`, que generará dos archivos php en la carpeta de validación (si no existía previamente el comando la generará automáticamente) y a partir de ahí modificamos el fichero _Validator_ para que se ajuste a lo que necesitamos.
-
-Un ejemplo sería el de teléfonos móviles de Españita:
-```
-if (!preg_match('((6|7)[0-9]{8})', $value, $matches)) {
-	$this->context->buildViolation($constraint->message)
-		->setParameter('{{ string }}', $value)
-		->addViolation();
-}
-```
-
-O el de DNIs:
-```
-$dni = $value;
-$numero = substr($dni, 0, -1);
-$letra  = strtoupper(substr($dni, -1));
-
-if (!is_string($value)) {
-	throw new UnexpectedValueException($value, 'string');            
-}
-
-if(!preg_match(("/^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i"), $value, $matches )){
-	$this->context->buildViolation($constraint->message)
-		->setParameter('{{ string }}', $value)
-		->addViolation();
-}
-
-if($letra != substr("TRWAGMYFPDXBNJZSQVHLCKE", strtr($numero, "XYZ", "012")%23, 1)){
-	$this->context->buildViolation($constraint->message)
-		->setParameter('{{ string }}', $value)
-		->addViolation();
-}
-    
-```
-
-**2. Poner los constraints en el formulario**
-
-Dentro del array del campo que necesitamos validar en el formulario hay que poner `['constraints' => [new Clase()]]` sustituyendo _Clase_ por el nombre de la clase validadora (sin poner _Validator_).
-
-**Ejemplo:**
-```
-->add('telefono', TextType::class, ['constraints' => [new TelefonoMovil()]])
-```
-
-
 ## Formularios
 En Symfony podemos crear formularios de dos maneras: con clase o sin clase. Si lo hacemos con clase los campos deben pertenecer a la entidad con la que haremos el formulario. Si es sin clase podremos añadir campos que no sean de dicha entidad.
 
@@ -408,3 +280,132 @@ Además en las _form_row_ podemos añadir variables (como _labels_, por ejemplo)
 Al igual que antes, en la [documentación](https://symfony.com/doc/current/form/form_customization.html) hay más ejemplos.
 
 **Importante:** las plantillas se hacen igual tanto en formularios con clase como sin clase.
+
+## Crear menú dinámico
+
+**1. Crear la entidad**
+
+Creamos la entidad _Menu_ con las propiedades _id_ y _titulo_. Tras ello actualizamos la base de datos.
+
+**2. El controlador**
+
+Aquí existen dos posiblidades: usar un controlador ya existente y crear un template nuevo o generar un controlador desde la línea de comandos. De una manera u otra la función deberá ser algo así (obviamente la ruta del twig no tiene que ser la misma):
+```
+    public function menu(ManagerRegistry $doctrine)
+    {
+	    $menus=$doctrine->getRepository(Menu::class)->findAll();
+	    return $this->render('menu/menu.html.twig',array("menus"=>$menus));
+    }
+```
+
+**3. El twig**
+
+El contenido del twig debe ser similar a esto:
+
+```
+{% extends 'base.html.twig' %}
+
+{% block menu %}
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="#">Navbar</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav">
+				{% for item in menus %}
+					<li class="nav-item">
+						<a class="nav-link" href="{{path(item.enlace)}}">{{item.titulo}}</a>
+                        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+                            <a class="nav-link" href="{{ path('app_logout') }}">
+                                Cerrar sesión
+                            </a>
+                            {% else %}
+                                <a class="nav-link" href="{{ path('login') }}">Iniciar sesión</a>
+                        {% endif %}
+					</li>
+				{% endfor %}
+               
+				</ul>
+			</div>
+		</div>
+	</nav>
+{% endblock %}
+```
+
+Aunque realmente se puede hacer de muchas maneras (esto es con una _navbar_ de Bootstrap) lo importante aquí es el uso del bucle for para generar los enlaces que están guardados en la base de datos y en el caso de tener que usar inicios y cierres de sesión utilizar el `if is_granted`. Si no los hay se quedaría algo así:
+
+```
+{% extends 'base.html.twig' %}
+
+{% block menu %}
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="#">Navbar</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav">
+				{% for item in menus %}
+					<li class="nav-item">
+						<a class="nav-link" href="{{path(item.enlace)}}">{{item.titulo}}</a>
+					</li>
+				{% endfor %}
+               
+				</ul>
+			</div>
+		</div>
+	</nav>
+{% endblock %}
+```
+
+## Validación
+**1. Crear validador**
+
+Para crear el validador tendremos que ejecutar el comando `php bin/console make:validator`, que generará dos archivos php en la carpeta de validación (si no existía previamente el comando la generará automáticamente) y a partir de ahí modificamos el fichero _Validator_ para que se ajuste a lo que necesitamos.
+
+Un ejemplo sería el de teléfonos móviles de Españita:
+```
+if (!preg_match('((6|7)[0-9]{8})', $value, $matches)) {
+	$this->context->buildViolation($constraint->message)
+		->setParameter('{{ string }}', $value)
+		->addViolation();
+}
+```
+
+O el de DNIs:
+```
+$dni = $value;
+$numero = substr($dni, 0, -1);
+$letra  = strtoupper(substr($dni, -1));
+
+if (!is_string($value)) {
+	throw new UnexpectedValueException($value, 'string');            
+}
+
+if(!preg_match(("/^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i"), $value, $matches )){
+	$this->context->buildViolation($constraint->message)
+		->setParameter('{{ string }}', $value)
+		->addViolation();
+}
+
+if($letra != substr("TRWAGMYFPDXBNJZSQVHLCKE", strtr($numero, "XYZ", "012")%23, 1)){
+	$this->context->buildViolation($constraint->message)
+		->setParameter('{{ string }}', $value)
+		->addViolation();
+}
+    
+```
+
+**2. Poner los constraints en el formulario**
+
+Dentro del array del campo que necesitamos validar en el formulario hay que poner `['constraints' => [new Clase()]]` sustituyendo _Clase_ por el nombre de la clase validadora (sin poner _Validator_).
+
+**Ejemplo:**
+```
+->add('telefono', TextType::class, ['constraints' => [new TelefonoMovil()]])
+```
+
+
