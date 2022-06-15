@@ -38,8 +38,7 @@ composer require symfony/security-bundle
 
 **7. Base de datos**
 
-Para que la base de datos funcione correctamente accedemos al fichero _.env_ y sustituimos la línea que hay por defecto para la base de datos por `DATABASE_URL="mysql://root:@127.0.0.1:3306/[nombre]?serverVersion=mariadb-10.4.22"
-` (sustituyendo _[nombre]_ por el nombre de nuestra base de datos).
+Para que la base de datos funcione correctamente accedemos al fichero _.env_ y sustituimos la línea que hay por defecto para la base de datos por `DATABASE_URL="mysql://root:@127.0.0.1:3306/[nombre]?serverVersion=mariadb-10.4.22"` (sustituyendo _[nombre]_ por el nombre de nuestra base de datos).
 
 ## Otros comandos
 
